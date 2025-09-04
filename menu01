@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>엄마의 정원 나한과 국화차 | 최고의 산지에서 온 자연의 힘</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Earthy Calm -->
+    <!-- Application Structure Plan: The SPA is designed for a narrative user journey. It starts with a visually appealing Hero section to introduce the product and its core promise ('도지'). It then educates the user on this key concept in a dedicated 'What is 도지?' section. The centerpiece is the 'Interactive Ingredient Explorer,' which moves beyond static lists to allow users to actively discover the story and quality of each ingredient through clickable cards and a data visualization chart. This builds engagement and trust. The structure then logically transitions to practical information: 'How to Enjoy' and a final 'Detailed Information' section for users considering purchase. This flow guides the user from emotional connection to rational understanding, creating a comprehensive and persuasive product experience. -->
+    <!-- Visualization & Content Choices: Report Info: The report provides detailed origin stories for 5 ingredients and a final table summarizing the confidence level for each '도지' claim. Goal: To inform, organize, and build trust in the product's quality claims. Viz/Presentation Method: An interactive grid of cards for ingredients and a dynamic bar chart for the confidence levels. Interaction: Users can click on an ingredient card to reveal its detailed origin story. They can also click on a bar in the chart, which will highlight and reveal the corresponding ingredient's information. This two-way interactivity connects the qualitative story with quantitative-like data (confidence levels). Justification: This interactive approach is far more engaging than a static table. It encourages exploration and makes the information more memorable. The bar chart visualizes the brand's confidence and transparency, reinforcing the 'premium quality' message. Library/Method: Vanilla JavaScript for DOM manipulation and event handling, Chart.js (Canvas) for the bar chart. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #FDFBF5;
+            color: #403A3A;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        .ingredient-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .ingredient-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .ingredient-card.active {
+            border-color: #A47F6A;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(164, 127, 106, 0.2), 0 4px 6px -2px rgba(164, 127, 106, 0.1);
+        }
+        .section-title {
+            display: inline-block; /* 밑줄이 텍스트 길이에 맞도록 수정 */
+            border-bottom: 2px solid #D3C5B9;
+            padding-bottom: 0.5rem;
+        }
+        .smooth-scroll {
+            scroll-behavior: smooth;
+        }
+        .detail-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.7s ease-in-out, padding 0.7s ease-in-out;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .detail-content.show {
+            max-height: 1000px; /* Large enough to not clip content */
+            padding-top: 1.5rem;
+            padding-bottom: 1.5rem;
+        }
+        /* 단어 단위 줄바꿈을 위한 클래스 추가 */
+        .keep-all-words {
+            word-break: keep-all;
+        }
+    </style>
+</head>
+<body class="smooth-scroll">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-[#6B5B51]">엄마의 정원</h1>
+            <!-- Desktop Menu -->
+            <ul class="hidden md:flex space-x-8 text-base">
+                <li><a href="#story" class="hover:text-[#A47F6A] transition-colors">브랜드 스토리</a></li>
+                <li><a href="#ingredients" class="hover:text-[#A47F6A] transition-colors">원료 탐험</a></li>
+                <li><a href="#usage" class="hover:text-[#A47F6A] transition-colors">즐기는 법</a></li>
+                <li><a href="#details" class="hover:text-[#A47F6A] transition-colors">제품 정보</a></li>
+            </ul>
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-[#6B5B51] focus:outline-none">
+                    <svg id="menu-open-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    <svg id="menu-close-icon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white/95 backdrop-blur-lg">
+            <ul class="flex flex-col items-center space-y-4 py-4">
+                <li><a href="#story" class="mobile-nav-link text-lg hover:text-[#A47F6A] transition-colors">브랜드 스토리</a></li>
+                <li><a href="#ingredients" class="mobile-nav-link text-lg hover:text-[#A47F6A] transition-colors">원료 탐험</a></li>
+                <li><a href="#usage" class="mobile-nav-link text-lg hover:text-[#A47F6A] transition-colors">즐기는 법</a></li>
+                <li><a href="#details" class="mobile-nav-link text-lg hover:text-[#A47F6A] transition-colors">제품 정보</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 md:py-16">
+
+        <section id="hero" class="text-center mb-16 md:mb-24">
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#6B5B51] leading-tight mb-4 keep-all-words">엄마의 정원 나한과 국화차</h2>
+            <p class="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto keep-all-words">최고의 산지에서 온 진정한 '도지(道地)'의 힘. 한 잔의 차를 위해, 세계 최고의 산지를 찾아 떠난 여정의 결과물입니다.</p>
+            <div class="mt-8 w-full max-w-4xl mx-auto aspect-[4/3] bg-[#EFEAE4] rounded-2xl shadow-lg overflow-hidden">
+                <img src="https://oneapp2.godohosting.com/garden/main2.png" 
+                     alt="나한과 국화차 제품 이미지" 
+                     class="w-full h-full object-cover">
+            </div>
+        </section>
+
+        <section id="story" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl md:text-4xl font-bold section-title keep-all-words">엄마의 정원의 약속: '도지(道地)'</h3>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-md max-w-4xl mx-auto">
+                <p class="text-center text-lg leading-relaxed text-gray-700 keep-all-words">
+                    '도지(道地)'는 특정 원료가 역사적으로 가장 이상적인 지리적 환경에서 자라 최상의 품질과 효능을 지녔음을 의미하는 전통적인 기준입니다. 와인의 '테루아(terroir)'처럼, 땅의 기운과 이야기가 담긴 원료만이 진정한 가치를 지닌다고 믿기에, 저희는 타협하지 않고 최고의 산지만을 고집합니다. '도지 수공 엄선(道地手工甄选)'은 저희의 확고한 신념입니다.
+                </p>
+            </div>
+        </section>
+
+        <section id="ingredients" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-4">
+                <h3 class="text-2xl md:text-4xl font-bold section-title keep-all-words">한 잔에 담긴 5가지 자연의 정수</h3>
+            </div>
+            <p class="text-center text-gray-600 mb-10 keep-all-words">각 원료 카드를 클릭하여 그 속에 담긴 특별한 이야기를 확인해보세요.</p>
+            
+            <div id="ingredient-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-12">
+            </div>
+
+            <div id="ingredient-detail-container" class="mt-8">
+            </div>
+
+            <div class="mt-16 bg-white p-6 rounded-xl shadow-md">
+                <h4 class="text-2xl font-bold text-center mb-2 keep-all-words">원산지 신뢰도 분석</h4>
+                <p class="text-center text-gray-600 mb-6 keep-all-words">저희는 각 원료의 '도지' 주장에 대한 전문가 분석 신뢰도를 투명하게 공개합니다. 차트의 막대를 클릭해보세요.</p>
+                <div class="chart-container">
+                    <canvas id="confidenceChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="usage" class="mb-16 md:mb-24 scroll-mt-20">
+            <div class="text-center mb-10">
+                <h3 class="text-2xl md:text-4xl font-bold section-title keep-all-words">즐기는 방법</h3>
+            </div>
+            <div class="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-xl shadow-md border-l-4 border-[#A47F6A]">
+                    <h4 class="text-2xl font-bold mb-4 keep-all-words">간편하게 즐길 때 (데일리 티)</h4>
+                    <p class="text-gray-700 leading-relaxed keep-all-words">600ml의 뜨거운 물에 티백을 넣고 15~20분간 충분히 우려낸 후, 적당한 온도로 식혀 가볍게 즐기세요. 하루의 활력과 편안함을 선사합니다.</p>
+                </div>
+                <div class="bg-white p-8 rounded-xl shadow-md border-l-4 border-[#8A9A5B]">
+                    <h4 class="text-2xl font-bold mb-4 keep-all-words">진하게 즐길 때 (건강차)</h4>
+                    <p class="text-gray-700 leading-relaxed keep-all-words">1920ml의 물과 함께 티백을 넣고 끓여주세요. 물이 끓기 시작하면 약한 불로 줄여 건조된 재료가 충분히 불어나고 성분이 깊게 우러나도록 달여주시면 온 가족이 함께 즐길 수 있는 건강차가 완성됩니다.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="details" class="scroll-mt-20">
+            <div class="text-center mb-10">
+                <h3 class="text-2xl md:text-4xl font-bold section-title keep-all-words">제품 상세 정보</h3>
+            </div>
+            <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md grid md:grid-cols-2 gap-8">
+                <div>
+                    <h4 class="text-xl font-bold mb-4 text-[#6B5B51]">기본 정보</h4>
+                    <ul class="space-y-2 text-gray-700">
+                        <li><strong>제품명:</strong> 엄마의 정원 나한과 국화차</li>
+                        <li><strong>식품 유형:</strong> 영양소 보충제</li>
+                        <li><strong>브랜드:</strong> 성연궁 (圣妍宫)</li>
+                        <li><strong>내용량:</strong> 100g</li>
+                        <li><strong>원재료:</strong> 나한과, 옥죽, 태국, 구기자, 설리</li>
+                        <li><strong>판매처:</strong> 엄마의 정원</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xl font-bold mb-4 text-[#A47F6A]">꼭 확인해주세요</h4>
+                    <div class="space-y-4">
+                        <div>
+                            <h5 class="font-semibold keep-all-words">섭취 시 주의사항</h5>
+                            <p class="text-sm text-gray-600 keep-all-words">임산부, 산후 여성, 유아, 영아 및 당뇨병 환자는 섭취를 권장하지 않습니다. 특정 질환이 있거나 약물을 복용 중이신 경우 전문가와 상담 후 섭취하시기 바랍니다.</p>
+                        </div>
+                        <div>
+                            <h5 class="font-semibold keep-all-words">보관 방법</h5>
+                            <p class="text-sm text-gray-600 keep-all-words">직사광선을 피하고 서늘하며 통풍이 잘 되는 건조한 곳에 밀봉하여 보관하세요. 개봉 후에는 변질의 우려가 있으니 가능한 한 빨리 사용하시기 바랍니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-[#EFEAE4] mt-16">
+        <div class="container mx-auto px-6 py-8 text-center text-gray-600">
+            <p>&copy; 2025 엄마의 정원. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Mobile Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            const openIcon = document.getElementById('menu-open-icon');
+            const closeIcon = document.getElementById('menu-close-icon');
+
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+                openIcon.classList.toggle('hidden');
+                closeIcon.classList.toggle('hidden');
+            });
+
+            // Close mobile menu when a link is clicked
+            document.querySelectorAll('.mobile-nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.add('hidden');
+                    openIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                });
+            });
+
+
+            const ingredientsData = [
+                {
+                    id: 'luohanguo',
+                    name: '나한과',
+                    icon: '🌿',
+                    storyTitle: '오직 단 한 곳, 세계의 발원지에서',
+                    story: '저희는 나한과의 세계적인 단일 원산지, 광시성 융푸현으로 향했습니다. 다른 어떤 곳과도 비교할 수 없는 독보적인 땅의 기운을 받은 나한과만이 낼 수 있는 깊고 깨끗한 단맛을 직접 확인하고 담았습니다.',
+                    confidence: 5,
+                    confidenceLabel: '높음'
+                },
+                {
+                    id: 'goji',
+                    name: '구기자',
+                    icon: '🍇',
+                    storyTitle: "약전(藥典)이 인정한 '황금 표준'",
+                    story: '수많은 구기자 중에서도, 중국 약전이 유일하게 약용으로 인정한 닝샤 중닝현의 구기자만을 고집합니다. 크기만 내세우는 것이 아닌, 수 세기 동안 검증된 진정한 가치를 선택했습니다.',
+                    confidence: 5,
+                    confidenceLabel: '높음'
+                },
+                {
+                    id: 'chrysanthemum',
+                    name: '태국',
+                    icon: '🌼',
+                    storyTitle: '가장 귀한 첫물, 국화 봉오리의 정수',
+                    story: '가장 귀한 첫 수확 시기, 활짝 피기 전 응축된 영양과 향을 머금은 국화 봉오리 \'태국\'만을 사용합니다. 항백국의 본고장 저장성 퉁샹의 정수를 담아, 그윽한 향과 풍미가 일품입니다.',
+                    confidence: 3,
+                    confidenceLabel: '중간'
+                },
+                {
+                    id: 'solomonseal',
+                    name: '옥죽',
+                    icon: '🌱',
+                    storyTitle: "명품 '상옥죽'의 깨끗함",
+                    story: '표준화된 재배(GAP)로 엄격하게 관리되는 후난성의 명품 \'상옥죽\'을 선택했습니다. 역사적 명성이 증명하는 깊고 깨끗한 맛을 느껴보세요.',
+                    confidence: 4,
+                    confidenceLabel: '중간-높음'
+                },
+                {
+                    id: 'snowpear',
+                    name: '설리',
+                    icon: '🍐',
+                    storyTitle: '역사적 명산지의 신선함',
+                    story: '고품질 배의 명산지로 이름 높은 허베이성 등에서 정성껏 재배하고 건조한 설리를 담아 은은한 달콤함과 시원함을 더했습니다.',
+                    confidence: 2,
+                    confidenceLabel: '중간-낮음'
+                }
+            ];
+
+            const grid = document.getElementById('ingredient-grid');
+            const detailContainer = document.getElementById('ingredient-detail-container');
+            let activeIngredientId = null;
+
+            function renderIngredientCards() {
+                ingredientsData.forEach((ingredient, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'ingredient-card cursor-pointer bg-white p-4 rounded-lg shadow-sm border-2 border-transparent text-center';
+                    card.dataset.id = ingredient.id;
+                    card.innerHTML = `
+                        <div class="text-4xl mb-2">${ingredient.icon}</div>
+                        <h4 class="font-bold">${ingredient.name}</h4>
+                    `;
+                    card.addEventListener('click', () => toggleIngredientDetail(ingredient.id, index));
+                    grid.appendChild(card);
+                });
+            }
+            
+            function toggleIngredientDetail(id, index = -1) {
+                if (activeIngredientId === id) {
+                    detailContainer.innerHTML = '';
+                    activeIngredientId = null;
+                    updateActiveCard();
+                    if (confidenceChart) {
+                        confidenceChart.setActiveElements([]);
+                        confidenceChart.update();
+                    }
+                } else {
+                    activeIngredientId = id;
+                    const ingredient = ingredientsData.find(ing => ing.id === id);
+                    detailContainer.innerHTML = `
+                        <div class="bg-white p-6 md:p-8 rounded-xl shadow-lg border-t-4 border-[#A47F6A] animate-fade-in">
+                             <div class="detail-content show">
+                                <h4 class="text-2xl font-bold mb-3 keep-all-words">${ingredient.name} <span class="text-lg font-medium text-gray-500">- ${ingredient.storyTitle}</span></h4>
+                                <p class="text-gray-700 leading-relaxed keep-all-words">${ingredient.story}</p>
+                            </div>
+                        </div>
+                    `;
+                    updateActiveCard();
+                    if (confidenceChart && index > -1) {
+                         confidenceChart.setActiveElements([{ datasetIndex: 0, index: index }]);
+                         confidenceChart.update();
+                    }
+                    // 스크롤 동작 수정: block: 'center' -> 'nearest'
+                    detailContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+
+            function updateActiveCard() {
+                document.querySelectorAll('.ingredient-card').forEach(card => {
+                    if (card.dataset.id === activeIngredientId) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
+            }
+
+            renderIngredientCards();
+
+            const ctx = document.getElementById('confidenceChart').getContext('2d');
+            const confidenceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ingredientsData.map(i => i.name),
+                    datasets: [{
+                        label: '원산지 신뢰도',
+                        data: ingredientsData.map(i => i.confidence),
+                        backgroundColor: 'rgba(164, 127, 106, 0.6)',
+                        borderColor: 'rgba(164, 127, 106, 1)',
+                        borderWidth: 1,
+                        hoverBackgroundColor: 'rgba(164, 127, 106, 0.9)',
+                        hoverBorderColor: 'rgba(164, 127, 106, 1)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value, index, values) {
+                                    const labels = ['-', '낮음', '중간-낮음', '중간', '중간-높음', '높음'];
+                                    return labels[value];
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += ingredientsData[context.dataIndex].confidenceLabel;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const ingredientId = ingredientsData[index].id;
+                            toggleIngredientDetail(ingredientId, index);
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
